@@ -8,7 +8,7 @@ import {
   Image,
   AsyncStorage,
 } from 'react-native';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -22,12 +22,15 @@ import axios from 'axios';
 import {
   ACCEPT_HEADER,
   delete_user_url,
+  getclientbyid_url,
   update_user_status_url,
 } from '../../utils/baseurl';
 import SimpleToast from 'react-native-simple-toast';
 
 const Totalclient = props => {
   const {GetClint, clint_array, clint_loading} = useBasicContext();
+
+  const [getItem, setItem] = useState([]);
 
   useEffect(() => {
     const unsubscribe = props.navigation.addListener('focus', () => {
@@ -63,6 +66,35 @@ const Totalclient = props => {
       })
       .catch(err => {
         console.log('errr', err);
+      });
+  };
+
+  const UpdateClient = async id => {
+    var Token = await AsyncStorage.getItem('token');
+
+    const formdata = new FormData();
+    formdata.append('id', id);
+
+    axios
+      .post(getclientbyid_url, formdata, {
+        headers: {
+          Accept: ACCEPT_HEADER,
+          Authorization: 'Bearer ' + Token,
+        },
+      })
+      .then(res => {
+        if (res.data.status === 'Token is Expired') {
+          setLogout(props);
+        } else {
+          if (res.data.success === 1) {
+            SimpleToast.show(res.data.message);
+            setItem(res.data.data);
+            console.log('RESSS DATA ', JSON.stringify(res.data.data, null, 2));
+          }
+        }
+      })
+      .catch(err => {
+        console.log('errreee', err);
       });
   };
 
@@ -306,6 +338,7 @@ const Totalclient = props => {
                     }}>
                     <TouchableOpacity
                       onPress={() => {
+                        // UpdateClient(item.id),
                         props.navigation.navigate('Addclient', {
                           item: item,
                         });

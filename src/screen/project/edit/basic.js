@@ -115,6 +115,36 @@ const Basic = props => {
     hideDatePickerquatation2();
   };
 
+  const [isDatePickerquatation3, setDatePickerquatation3] = useState(false);
+  const [getdatequatation3, setdatequatation3] = useState('');
+
+  const showDatePickerquatation3 = () => {
+    setDatePickerquatation3(true);
+  };
+
+  const hideDatePickerquatation3 = () => {
+    setDatePickerquatation3(false);
+  };
+  const handleConfirmquatation3 = date => {
+    setdatequatation3(date);
+    hideDatePickerquatation3();
+  };
+
+  const [isDatePickerquatation4, setDatePickerquatation4] = useState(false);
+  const [getdatequatation4, setdatequatation4] = useState('');
+
+  const showDatePickerquatation4 = () => {
+    setDatePickerquatation4(true);
+  };
+
+  const hideDatePickerquatation4 = () => {
+    setDatePickerquatation4(false);
+  };
+  const handleConfirmquatation4 = date => {
+    setdatequatation4(date);
+    hideDatePickerquatation4();
+  };
+
   const data = [
     {id: 1, name: 'Monday'},
     {id: 2, name: 'Tuesday'},
@@ -169,6 +199,14 @@ const Basic = props => {
         moment(getdatequatation1).format('YYYY-MM-DD'),
       );
       data.append('deadline', moment(getdatequatation2).format('YYYY-MM-DD'));
+      data.append(
+        'bealing_start_date',
+        moment(getdatequatation3).format('YYYY-MM-DD'),
+      );
+      data.append(
+        'renual_date',
+        moment(getdatequatation4).format('YYYY-MM-DD'),
+      );
       data.append('details', pDetails);
       data.append('com_name', cName);
       data.append('client_location', cLocation);
@@ -179,7 +217,7 @@ const Basic = props => {
       data.append('type', value1.id);
       data.append('assign_day', value3.id);
 
-      console.log('dataaa', data);
+      // console.log('dataaaAAA', data);
 
       axios
         .post(createbasicproject_url, data, {
@@ -534,8 +572,6 @@ const Basic = props => {
               borderRadius: 5,
               backgroundColor: '#393E46',
               justifyContent: 'center',
-              // paddingTop: 15,
-              // paddingBottom: 15,
             }}>
             <DateTimePickerModal
               isVisible={isDatePickerquatation2}
@@ -572,6 +608,103 @@ const Basic = props => {
             </TouchableOpacity>
           </View>
         </View>
+
+        <View style={{marginHorizontal: '3%'}}>
+          <Text style={styles.txt}>Bealing Start Date</Text>
+          <View
+            style={{
+              height: metrics.HEIGHT * 0.06,
+              borderWidth: 0.5,
+              borderColor: '#393E46',
+              borderRadius: 5,
+              backgroundColor: '#393E46',
+              justifyContent: 'center',
+              // paddingTop: 15,
+              // paddingBottom: 15,
+            }}>
+            <DateTimePickerModal
+              isVisible={isDatePickerquatation3}
+              mode="date"
+              onConfirm={handleConfirmquatation3}
+              onCancel={hideDatePickerquatation3}
+            />
+            <TouchableOpacity onPress={showDatePickerquatation3}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}>
+                <Text
+                  style={{
+                    color: colors.white,
+                    alignSelf: 'center',
+                    marginHorizontal: '5%',
+                  }}>
+                  {moment(getdatequatation3).format('DD/MM/YYYY') ==
+                  'Invalid date'
+                    ? 'dd/mm/yyyy'
+                    : moment(getdatequatation3).format('DD/MM/YYYY')}
+                </Text>
+                <Fontisto
+                  name="date"
+                  size={20}
+                  style={{
+                    marginHorizontal: '5%',
+                    color: '#00ADB5',
+                  }}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={{marginHorizontal: '3%'}}>
+          <Text style={styles.txt}>Renual Date</Text>
+          <View
+            style={{
+              height: metrics.HEIGHT * 0.06,
+              borderWidth: 0.5,
+              borderColor: '#393E46',
+              borderRadius: 5,
+              backgroundColor: '#393E46',
+              justifyContent: 'center',
+            }}>
+            <DateTimePickerModal
+              isVisible={isDatePickerquatation4}
+              mode="date"
+              onConfirm={handleConfirmquatation4}
+              onCancel={hideDatePickerquatation4}
+            />
+            <TouchableOpacity onPress={showDatePickerquatation4}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}>
+                <Text
+                  style={{
+                    color: colors.white,
+                    alignSelf: 'center',
+                    marginHorizontal: '5%',
+                  }}>
+                  {moment(getdatequatation4).format('DD/MM/YYYY') ==
+                  'Invalid date'
+                    ? 'dd/mm/yyyy'
+                    : moment(getdatequatation4).format('DD/MM/YYYY')}
+                </Text>
+                <Fontisto
+                  name="date"
+                  size={20}
+                  style={{
+                    marginHorizontal: '5%',
+                    color: '#00ADB5',
+                  }}
+                />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={{marginHorizontal: '3%', marginBottom: '10%'}}>
           <Text style={styles.txt}>Project Details</Text>
           <TextInput

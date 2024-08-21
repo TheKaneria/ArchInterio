@@ -7,16 +7,20 @@ import {
   StyleSheet,
   TextInput,
   ActivityIndicator,
+  TouchableOpacity,
+  FlatList,
+  AsyncStorage,
 } from 'react-native';
 import React, {useEffect, useState} from 'react';
 import Backcom from '../../component/backcom';
 import colors from '../../utils/colors';
-import {TouchableOpacity} from 'react-native-gesture-handler';
 import metrics from '../../utils/metrics';
-import fonts from '../../utils/fonts';
 import {Dropdown} from 'react-native-element-dropdown';
 import {useBasicContext} from '../../context/basic_context';
 import SimpleToast from 'react-native-simple-toast';
+import Modal from 'react-native-modal';
+import axios from 'axios';
+import {ACCEPT_HEADER, deleteFamily} from '../../utils/baseurl';
 
 const Addclient = props => {
   const {
@@ -35,6 +39,8 @@ const Addclient = props => {
   const [isedit, SetIsEdit] = useState(false);
   const [mainid, SetMainId] = useState('');
 
+  const [visible, setVisible] = useState(false);
+
   const [name, SetName] = useState('');
   const [email, SetEmail] = useState('');
   const [password, SetPassword] = useState('');
@@ -52,10 +58,59 @@ const Addclient = props => {
   const [Address, SetAddress] = useState('');
   const [billAddress, SetBillAddress] = useState('');
 
+  const [familyPerson, setFamilyPerson] = useState('');
+  const [birthPlace, setBirthPlace] = useState('');
+  const [birthtime, setBirthTime] = useState('');
+
+  const [newValues, setNewValues] = useState([]);
+  const [editItem, setEditItem] = useState(null); // State to store the item being edited
+
+  const handleSave = async () => {
+    if (editItem) {
+      // Edit existing item
+      const updatedValues = newValues.map(item =>
+        item.birth_time === editItem.birth_time
+          ? {
+              ...item,
+              name: familyPerson,
+              birth_place: birthPlace,
+              birth_time: birthtime,
+            }
+          : item,
+      );
+      setNewValues(updatedValues);
+      setEditItem(null); // Reset editItem state
+    } else {
+      // Add new item
+      const newItem = {
+        name: familyPerson,
+        birth_place: birthPlace,
+        birth_time: birthtime,
+      };
+      await setNewValues([...newValues, newItem]);
+    }
+
+    setFamilyPerson('');
+    setBirthPlace('');
+    setBirthTime('');
+    setVisible(false);
+  };
+
+  const handleEdit = item => {
+    setEditItem(item); // Set the item being edited
+    setFamilyPerson(item.name);
+    setBirthPlace(item.birth_place);
+    setBirthTime(item.birth_time);
+    setVisible(true);
+  };
+
+  // console.log('NNNNNNNNN', JSON.stringify(newValues, null, 2));
+
   useEffect(() => {
     const unsubscribe = props.navigation.addListener('focus', () => {
       get_Country(props);
       const {item} = props.route.params;
+
       if (item !== '') {
         SetMainId(item.id);
         get_State(props, item.country_id);
@@ -76,7 +131,7 @@ const Addclient = props => {
         SetCountry(Number(item.country_id));
         SetState(Number(item.state_id));
         SetCity(Number(item.city_id));
-
+        setNewValues(item.familydetails);
         SetIsEdit(true);
       } else {
         SetIsEdit(false);
@@ -86,6 +141,7 @@ const Addclient = props => {
   }, [props]);
 
   const regex = /^[A-Za-z0-9]+$/;
+
   const AddUser = () => {
     if (name === '') {
       SimpleToast.show('Enter Name');
@@ -94,7 +150,7 @@ const Addclient = props => {
     } else if (email === '') {
       SimpleToast.show('Enter Email');
     } else if (regex.test(email) === false) {
-      SimpleToast.show('Email only Alphabets and Numbers allowed.');
+      SimpleToast.show('only Alphabets and Numbers allowed.');
     } else if (password === '') {
       SimpleToast.show('Enter Password');
     } else if (getCountry === '') {
@@ -125,6 +181,12 @@ const Addclient = props => {
       formdata.append('gst', gst);
       formdata.append('address', Address);
       formdata.append('billing_address', billAddress);
+
+      for (var i = 0; i < newValues.length; i++) {
+        formdata.append('family_person[' + i + ']', newValues[i].name);
+        formdata.append('birth_place[' + i + ']', newValues[i].birth_place);
+        formdata.append('birth_time[' + i + ']', newValues[i].birth_time);
+      }
 
       Add_Clent(props, formdata);
     }
@@ -171,8 +233,61 @@ const Addclient = props => {
       formdata.append('address', Address);
       formdata.append('billing_address', billAddress);
 
+      newValues.forEach((item, i) => {
+        if (!item.id) {
+          formdata.append(`family_person[${i}]`, item.name);
+          formdata.append(`birth_place[${i}]`, item.birth_place);
+          formdata.append(`birth_time[${i}]`, item.birth_time);
+        } else {
+          formdata.append(`edit_clone_id[${i}]`, item.id);
+          formdata.append(`edit_family_person[${i}]`, item.name);
+          formdata.append(`edit_birth_place[${i}]`, item.birth_place);
+          formdata.append(`edit_birth_time[${i}]`, item.birth_time);
+        }
+      });
+
+      console.log('UPDATE FORM DATA ', JSON.stringify(formdata, null, 2));
+
       Update_Clent(props, formdata);
     }
+  };
+
+  const [deleteLoad, setDelLoad] = useState(false);
+  const DeleteFamily = async id => {
+    setDelLoad(prev => ({...prev, [id]: true}));
+
+    var Token = await AsyncStorage.getItem('token');
+    const formdata = new FormData();
+    formdata.append('id', id);
+
+    axios
+      .post(deleteFamily, formdata, {
+        headers: {
+          Accept: ACCEPT_HEADER,
+          Authorization: 'Bearer ' + Token,
+        },
+      })
+      .then(res => {
+        if (res.data.status === 'Token is Expired') {
+          setLogout(props);
+          setDelLoad(prev => ({...prev, [id]: false}));
+        } else {
+          if (res.data.success === 1) {
+            SimpleToast.show(res.data.message);
+            props.navigation.goBack(null);
+            setDelLoad(prev => ({...prev, [id]: false}));
+          }
+        }
+      })
+      .catch(err => {
+        console.log('errreee', err);
+        setDelLoad(prev => ({...prev, [id]: false}));
+      });
+  };
+
+  const removeItem = id => {
+    const updatedValues = newValues.filter(item => item.birth_time !== id);
+    setNewValues(updatedValues);
   };
 
   return (
@@ -189,9 +304,6 @@ const Addclient = props => {
           style={{
             marginTop: '2%',
             marginBottom: '2%',
-
-            // paddingTop: metrics.HEIGHT * 0.01,
-            // paddingBottom: metrics.HEIGHT * 0.01,
             alignItems: 'center',
             marginHorizontal: '3%',
             borderRadius: 5,
@@ -291,7 +403,6 @@ const Addclient = props => {
             style={{
               width: '90%',
               color: '#fff',
-
               backgroundColor: '#393E46',
             }}
             value={mobile}
@@ -315,6 +426,9 @@ const Addclient = props => {
             dropdownPosition="bottom"
             itemContainerStyle={styles.itemconstyle}
             itemTextStyle={{
+              color: '#fff',
+            }}
+            inputSearchStyle={{
               color: '#fff',
             }}
             data={counrty_array}
@@ -344,6 +458,9 @@ const Addclient = props => {
             itemTextStyle={{
               color: '#fff',
             }}
+            inputSearchStyle={{
+              color: '#fff',
+            }}
             data={state_array}
             activeColor="#00ADB5"
             maxHeight={300}
@@ -371,6 +488,9 @@ const Addclient = props => {
             itemTextStyle={{
               color: '#fff',
             }}
+            inputSearchStyle={{
+              color: '#fff',
+            }}
             data={city_array}
             activeColor="#00ADB5"
             maxHeight={300}
@@ -393,9 +513,6 @@ const Addclient = props => {
           style={{
             marginTop: '2%',
             marginBottom: '2%',
-
-            // paddingTop: metrics.HEIGHT * 0.01,
-            // paddingBottom: metrics.HEIGHT * 0.01,
             alignItems: 'center',
             marginHorizontal: '3%',
             borderRadius: 5,
@@ -436,7 +553,6 @@ const Addclient = props => {
             style={{
               width: '90%',
               color: '#fff',
-
               backgroundColor: '#393E46',
             }}
             placeholder="Enter Contact Person Number"
@@ -641,9 +757,6 @@ const Addclient = props => {
           style={{
             marginTop: '2%',
             marginBottom: '2%',
-
-            // paddingTop: metrics.HEIGHT * 0.01,
-            // paddingBottom: metrics.HEIGHT * 0.01,
             alignItems: 'center',
             marginHorizontal: '3%',
             borderRadius: 5,
@@ -653,7 +766,6 @@ const Addclient = props => {
             style={{
               width: '90%',
               color: '#fff',
-
               backgroundColor: '#393E46',
             }}
             placeholder="Enter Billing Address"
@@ -663,6 +775,162 @@ const Addclient = props => {
               SetBillAddress(text);
             }}
           />
+        </View>
+
+        <View style={{marginHorizontal: '4%'}}>
+          <View>
+            <Text style={styles.txt}>Family Details</Text>
+          </View>
+          <View
+            style={{backgroundColor: '#393E46', padding: 10, borderRadius: 5}}>
+            <FlatList
+              data={newValues}
+              renderItem={({item, index}) => {
+                return (
+                  <View
+                    style={{
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      marginBottom: '5%',
+                      padding: 10,
+                      borderRadius: 5,
+                      position: 'relative',
+                    }}>
+                    <View style={{flexDirection: 'row'}}>
+                      <Text
+                        style={{
+                          fontWeight: '600',
+                          color: '#00ADB5',
+                          fontSize: 15,
+                        }}>
+                        Family Person :{' '}
+                      </Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 15,
+                        }}>
+                        {item.name}
+                      </Text>
+                    </View>
+                    <View style={{flexDirection: 'row', marginTop: '2%'}}>
+                      <Text
+                        style={{
+                          fontWeight: '600',
+                          color: '#00ADB5',
+                          fontSize: 15,
+                        }}>
+                        Birth Place :{' '}
+                      </Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 15,
+                        }}>
+                        {item.birth_place}
+                      </Text>
+                    </View>
+                    <View style={{flexDirection: 'row', marginTop: '2%'}}>
+                      <Text
+                        style={{
+                          fontWeight: '600',
+                          color: '#00ADB5',
+                          fontSize: 15,
+                        }}>
+                        Birth Time :{' '}
+                      </Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 15,
+                        }}>
+                        {item.birth_time}
+                      </Text>
+                    </View>
+
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        marginTop: '5%',
+                        justifyContent: 'space-between',
+                        marginHorizontal: '5%',
+                      }}>
+                      <TouchableOpacity
+                        onPress={() => handleEdit(item)}
+                        style={{
+                          backgroundColor: '#00ADB5',
+                          padding: 10,
+                          borderRadius: 5,
+                          width: 70,
+                          alignItems: 'center',
+                        }}>
+                        <Text style={{color: colors.white, fontWeight: '600'}}>
+                          Edit
+                        </Text>
+                      </TouchableOpacity>
+                      {isedit === true ? (
+                        <TouchableOpacity
+                          onPress={() => DeleteFamily(item.id)}
+                          style={{
+                            backgroundColor: 'red',
+                            padding: 10,
+                            width: 70,
+                            alignItems: 'center',
+                            borderRadius: 5,
+                          }}>
+                          {deleteLoad[item.id] ? (
+                            <ActivityIndicator size={'small'} color={'#fff'} />
+                          ) : (
+                            <Text
+                              style={{color: colors.white, fontWeight: '600'}}>
+                              Delete
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => removeItem(item.birth_time)}
+                          style={{
+                            backgroundColor: 'red',
+                            padding: 10,
+                            width: 80,
+                            alignItems: 'center',
+                            borderRadius: 5,
+                          }}>
+                          <Text
+                            style={{color: colors.white, fontWeight: '600'}}>
+                            Remove
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                );
+              }}
+              ListEmptyComponent={() => {
+                return (
+                  <View style={{alignItems: 'center'}}>
+                    <Text style={{fontWeight: '500', color: colors.white}}>
+                      There are no family members added
+                    </Text>
+                  </View>
+                );
+              }}
+            />
+          </View>
+        </View>
+
+        <View style={{width: '90%', alignSelf: 'center', marginVertical: '5%'}}>
+          <TouchableOpacity
+            onPress={() => setVisible(true)}
+            style={{
+              width: 150,
+              backgroundColor: '#00ADB5',
+              alignItems: 'center',
+              paddingVertical: 10,
+              borderRadius: 10,
+            }}>
+            <Text style={{color: '#fff'}}>Add Family Details</Text>
+          </TouchableOpacity>
         </View>
 
         {isedit === true ? (
@@ -692,7 +960,7 @@ const Addclient = props => {
                   fontWeight: '500',
                   fontSize: 16,
                 }}>
-                SUBMIT
+                Update
               </Text>
             )}
           </TouchableOpacity>
@@ -729,6 +997,94 @@ const Addclient = props => {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      <Modal isVisible={visible} onBackButtonPress={() => setVisible(false)}>
+        <View
+          style={{
+            flex: 1,
+            maxHeight: 450,
+            backgroundColor: '#fff',
+            borderRadius: 10,
+          }}>
+          <ScrollView style={{flex: 1}}>
+            <View
+              style={{width: '90%', alignSelf: 'center', marginVertical: '5%'}}>
+              <Text
+                style={{fontSize: 17, color: '#00ADB5', fontWeight: 'bold'}}>
+                Family Person
+              </Text>
+              <TextInput
+                value={familyPerson}
+                onChangeText={txt => setFamilyPerson(txt)}
+                placeholder="Enter Family Person"
+                style={{
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  marginTop: '2%',
+                  borderRadius: 5,
+                  paddingHorizontal: 10,
+                }}
+              />
+            </View>
+
+            <View
+              style={{width: '90%', alignSelf: 'center', marginVertical: '5%'}}>
+              <Text
+                style={{fontSize: 17, color: '#00ADB5', fontWeight: 'bold'}}>
+                Birth Place
+              </Text>
+              <TextInput
+                value={birthPlace}
+                onChangeText={txt => setBirthPlace(txt)}
+                placeholder="Enter Birth Place"
+                style={{
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  marginTop: '2%',
+                  borderRadius: 5,
+                  paddingHorizontal: 10,
+                }}
+              />
+            </View>
+
+            <View
+              style={{width: '90%', alignSelf: 'center', marginVertical: '5%'}}>
+              <Text
+                style={{fontSize: 17, color: '#00ADB5', fontWeight: 'bold'}}>
+                Birth Time
+              </Text>
+              <TextInput
+                value={birthtime}
+                onChangeText={txt => setBirthTime(txt)}
+                placeholder="Enter Birth Time"
+                style={{
+                  backgroundColor: 'rgba(0,0,0,0.1)',
+                  marginTop: '2%',
+                  borderRadius: 5,
+                  paddingHorizontal: 10,
+                }}
+              />
+            </View>
+
+            <View
+              style={{
+                width: '90%',
+                alignSelf: 'center',
+                alignItems: 'center',
+                marginTop: '5%',
+              }}>
+              <TouchableOpacity
+                onPress={() => handleSave()}
+                style={{
+                  backgroundColor: '#00ADB5',
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderRadius: 5,
+                }}>
+                <Text style={{fontWeight: 'bold', color: '#fff'}}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 };

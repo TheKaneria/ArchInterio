@@ -282,6 +282,54 @@ const Project = props => {
                 flexDirection: 'row',
                 marginTop: '4%',
                 marginHorizontal: '4%',
+              }}>
+              <Text
+                style={{
+                  color: '#FFF',
+                  fontWeight: '700',
+                  fontSize: 15,
+                }}>
+                Bealing Start Date :
+              </Text>
+              <Text
+                style={{
+                  color: '#CCD6DD',
+                  marginLeft: '3%',
+                  fontWeight: '550',
+                  fontSize: 15,
+                }}>
+                {item.bealing_start_date ? item.bealing_start_date : 'N/A'}
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                marginTop: '4%',
+                marginHorizontal: '4%',
+              }}>
+              <Text
+                style={{
+                  color: '#FFF',
+                  fontWeight: '700',
+                  fontSize: 15,
+                }}>
+                Renual Date :
+              </Text>
+              <Text
+                style={{
+                  color: '#CCD6DD',
+                  marginLeft: '3%',
+                  fontWeight: '550',
+                  fontSize: 15,
+                }}>
+                {item.renual_date ? item.renual_date : 'N/A'}
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                marginTop: '4%',
+                marginHorizontal: '4%',
                 alignItems: 'center',
               }}>
               <Text

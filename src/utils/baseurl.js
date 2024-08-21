@@ -8,6 +8,8 @@ export const dashboard = BASE_URL + 'dashboard';
 
 // get_client
 export const getclient_url = BASE_URL + 'get_client';
+export const getclientbyid_url = BASE_URL + 'get_client_by_id';
+export const deleteFamily = BASE_URL + 'delete_family_details';
 export const update_user_status_url = BASE_URL + 'update_user_status';
 export const delete_user_url = BASE_URL + 'delete_user';
 export const add_client_url = BASE_URL + 'add_client';

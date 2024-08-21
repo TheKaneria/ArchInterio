@@ -21,6 +21,7 @@ import * as Animatable from 'react-native-animatable';
 import metrics from '../utils/metrics';
 import {useLoginContext} from '../context/login_context';
 import Toast from 'react-native-simple-toast';
+import messaging from '@react-native-firebase/messaging';
 const Login = props => {
   const {login_loading, Loginapi} = useLoginContext();
   const [getemail, setemail] = useState('');
@@ -29,6 +30,7 @@ const Login = props => {
     /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
   const [focusedInputs, setfocusedInputs] = useState(false);
   const [focusedInputs1, setfocusedInputs1] = useState(false);
+  const [showpass, setShowPass] = useState(false);
 
   const handleFocus = () => {
     setfocusedInputs(true);
@@ -46,6 +48,65 @@ const Login = props => {
     setfocusedInputs1(false);
   };
 
+  useEffect(() => {
+    requestNotificationPermission();
+    checkPermission();
+  }, []);
+
+  const [fcmToken, setFCMToken] = useState('');
+
+  const checkPermission = async () => {
+    const enabled = await messaging().hasPermission();
+    console.log('Authorization enabled:', enabled);
+
+    if (enabled == 1 || enabled == 2) {
+      getFcmToken();
+    } else {
+      requestUserPermission();
+    }
+  };
+
+  const requestUserPermission = async () => {
+    const authStatus = await messaging().requestPermission();
+
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+
+    if (enabled) {
+      console.log('Authorization status:', authStatus);
+    }
+  };
+  const getFcmToken = async () => {
+    const fcmToken = await messaging().getToken();
+
+    if (fcmToken) {
+      console.log('fcmToken', fcmToken);
+      setFCMToken(fcmToken);
+    } else {
+      console.log('Failed', 'No token received');
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    try {
+      const authStatus = await messaging().requestPermission();
+      if (authStatus === messaging.AuthorizationStatus.AUTHORIZED) {
+        Toast.show('Notification permission granted.');
+      } else if (authStatus === messaging.AuthorizationStatus.DENIED) {
+        Alert.alert(
+          'Notification Permission Denied',
+          'Please enable notification permission in settings to receive notifications.',
+        );
+      } else {
+        Toast.show('Notification permission request rejected.');
+      }
+    } catch (error) {
+      console.log('Error requesting notification permission:', error);
+      Toast.show('Failed to request notification permission.');
+    }
+  };
+
   const onSubmit = () => {
     if (getemail == '') {
       Toast.show('Please enter Email');
@@ -54,7 +115,10 @@ const Login = props => {
     } else if (getpassword == '') {
       Toast.show('Please enter Password');
     } else {
-      const param = {email: getemail, password: getpassword};
+      const param = {
+        email: getemail,
+        password: getpassword,
+      };
       Loginapi(param, props, true);
     }
   };
@@ -164,8 +228,20 @@ const Login = props => {
                   onFocus={() => handleFocus1()}
                   onBlur={() => handleBlur1()}
                   placeholder={'PASSWORD'}
+                  secureTextEntry={showpass ? false : true}
                   placeholderTextColor={colors.white}
                   onChangeText={val => setpassword(val)}
+                />
+                <Ionicons
+                  onPress={() => {
+                    setShowPass(!showpass);
+                  }}
+                  name={showpass ? 'eye' : 'eye-off'}
+                  style={{
+                    marginLeft: '-5%',
+                  }}
+                  size={20}
+                  color={focusedInputs1 ? '#00ADB5' : '#d5d8dd'}
                 />
               </View>
               <TouchableOpacity

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1468435704",
+    "project_id": "archinterio-cf605",
+    "storage_bucket": "archinterio-cf605.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1468435704:android:0e52816c5910f22069ff0d",
+        "android_client_info": {
+          "package_name": "com.archinteriopro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvVzfQbXMtVmhwuwUoxsrFTjO8nE1SjgU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

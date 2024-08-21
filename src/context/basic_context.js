@@ -101,6 +101,7 @@ export const Basicprovider = ({children}) => {
       })
       .catch(err => {
         dispatch({type: GETCLIENT_BEGIN_ERROR});
+        console.log('Error in Get Client ', err);
       });
   };
 
@@ -129,6 +130,7 @@ export const Basicprovider = ({children}) => {
       })
       .catch(err => {
         dispatch({type: ADDCLIENT_ERROR});
+        console.log('Error in Adding Client ', err);
       });
   };
 
